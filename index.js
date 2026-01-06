@@ -1,74 +1,69 @@
-const fetchBtn = document.getElementById('fetch-btn');
-const stateInput = document.getElementById('state-input');
-const alertsDiv = document.getElementById('alerts');
-const errorDiv = document.getElementById('error-message');
+document.addEventListener('DOMContentLoaded', () => {
+  const input = document.querySelector('#state-input')
+  const button = document.querySelector('#fetch-alerts')
+  const alertsDisplay = document.querySelector('#alerts-display')
+  const errorDiv = document.querySelector('#error-message')
 
-fetchBtn.addEventListener('click', () => {
-  const state = stateInput.value.trim().toUpperCase();
+  button.addEventListener('click', () => {
+    const state = input.value.trim().toUpperCase()
 
-  // Input validation: must be two letters
-  if (!/^[A-Z]{2}$/.test(state)) {
-    showError('Please enter a valid two-letter state abbreviation.');
-    return;
+    fetchWeatherAlerts(state)
+
+    // Clear input immediately after click
+    input.value = ''
+  })
+
+  function fetchWeatherAlerts(state) {
+    fetch(`https://api.weather.gov/alerts/active?area=${state}`)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Error: ${response.status}`)
+        }
+        return response.json()
+      })
+      .then(data => {
+        console.log(data)
+
+        // Clear any previous errors
+        errorDiv.textContent = ''
+        errorDiv.classList.add('hidden')
+
+        displayAlerts(data)
+      })
+      .catch(error => {
+        alertsDisplay.innerHTML = ''
+        errorDiv.textContent = error.message
+        errorDiv.classList.remove('hidden')
+        console.log(error.message)
+      })
   }
 
-  fetchWeatherAlerts(state);
-});
+  function displayAlerts(data) {
+    // Clear previous alerts
+    alertsDisplay.innerHTML = ''
 
-function fetchWeatherAlerts(state) {
-  // Clear previous data and errors
-  alertsDiv.innerHTML = '';
-  errorDiv.style.display = 'none';
-  errorDiv.textContent = '';
+    const alertCount = data.features.length
 
-  // Show loading message
-  alertsDiv.innerHTML = '<p class="loading">Loading alerts...</p>';
+    const summary = document.createElement('h3')
+    summary.textContent = `${data.title}: ${alertCount}`
+    alertsDisplay.appendChild(summary)
 
-  fetch(`https://api.weather.gov/alerts/active?area=${state}`)
-    .then(response => {
-      if (!response.ok) {
-        throw new Error(`API returned status ${response.status}`);
-      }
-      return response.json();
+    data.features.forEach(alert => {
+      const p = document.createElement('p')
+      p.textContent = alert.properties.headline
+      alertsDisplay.appendChild(p)
     })
-    .then(data => {
-      console.log(data); // For testing
-      displayAlerts(data, state);
-    })
-    .catch(error => {
-      showError(error.message);
-      alertsDiv.innerHTML = '';
-    });
-
-  // Clear input
-  stateInput.value = '';
-}
-
-function displayAlerts(data, state) {
-  const alerts = data.features;
-  alertsDiv.innerHTML = '';
-
-  if (alerts.length === 0) {
-    alertsDiv.textContent = `No active alerts for ${state}.`;
-    return;
   }
+})
 
-  // Summary
-  const summary = document.createElement('p');
-  summary.textContent = `Current watches, warnings, and advisories for ${state}: ${alerts.length}`;
-  alertsDiv.appendChild(summary);
+fetch(`https://api.weather.gov/alerts/active?area=${state}`)
 
-  // List of alert headlines
-  const ul = document.createElement('ul');
-  alerts.forEach(alert => {
-    const li = document.createElement('li');
-    li.textContent = alert.properties.headline || 'No headline available';
-    ul.appendChild(li);
-  });
-  alertsDiv.appendChild(ul);
-}
+Weather Alerts: 2
+Flood warning in your area
+Tornado watch for the region
 
-function showError(message) {
-  errorDiv.textContent = message;
-  errorDiv.style.display = 'block';
-}
+input.value = ''
+
+
+
+
