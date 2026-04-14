@@ -1,68 +1,46 @@
-document.addEventListener('DOMContentLoaded', () => {
-  const input = document.querySelector('#state-input')
-  const button = document.querySelector('#fetch-alerts')
-  const alertsDisplay = document.querySelector('#alerts-display')
-  const errorDiv = document.querySelector('#error-message')
+document.addEventListener("DOMContentLoaded", () => {
+  const input = document.getElementById("state-input");
+  const button = document.getElementById("fetch-alerts");
+  const display = document.getElementById("alerts-display");
+  const errorDiv = document.getElementById("error-message");
 
-  button.addEventListener('click', () => {
-    const state = input.value.trim().toUpperCase()
+  button.addEventListener("click", async () => {
+    const state = input.value.trim().toUpperCase();
 
-    fetchWeatherAlerts(state)
+    const url = `https://api.weather.gov/alerts/active?area=${state}`;
 
-    // Clear input immediately after click
-    input.value = ''
-  })
+    try {
+      const response = await fetch(url);
 
-  function fetchWeatherAlerts(state) {
-    fetch(`https://api.weather.gov/alerts/active?area=${state}`)
-      .then(response => {
-        if (!response.ok) {
-          throw new Error(`Error: ${response.status}`)
-        }
-        return response.json()
-      })
-      .then(data => {
-        console.log(data)
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}`);
+      }
 
-        // Clear any previous errors
-        errorDiv.textContent = ''
-        errorDiv.classList.add('hidden')
+      const data = await response.json();
+      const alerts = data.features || [];
 
-        displayAlerts(data)
-      })
-      .catch(error => {
-        alertsDisplay.innerHTML = ''
-        errorDiv.textContent = error.message
-        errorDiv.classList.remove('hidden')
-        console.log(error.message)
-      })
-  }
+      // Clear error message on success
+      errorDiv.textContent = "";
+      errorDiv.classList.add("hidden");
 
-  function displayAlerts(data) {
-    // Clear previous alerts
-    alertsDisplay.innerHTML = ''
+      // Render alerts
+      display.innerHTML = `
+        Weather Alerts: ${alerts.length}
+        <ul>
+          ${alerts.map(a => `<li>${a.properties.headline}</li>`).join("")}
+        </ul>
+      `;
 
-    const alertCount = data.features.length
+      // Clear input field
+      input.value = "";
 
-    const summary = document.createElement('h3')
-    summary.textContent = `${data.title}: ${alertCount}`
-    alertsDisplay.appendChild(summary)
-
-    data.features.forEach(alert => {
-      const p = document.createElement('p')
-      p.textContent = alert.properties.headline
-      alertsDisplay.appendChild(p)
-    })
-  }
-})
-
-fetch(`https://api.weather.gov/alerts/active?area=${state}`)
-
-Weather Alerts: 2
-Flood warning in your area
-Tornado watch for the region
-
-input.value = ''
+    } catch (error) {
+      // Show error message
+      errorDiv.classList.remove("hidden");
+      errorDiv.textContent = error.message;
+    }
+  });
+});
 
 
 
